@@ -1,5 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Congestion Scans from Boston Region MPO INRIX Data</title>
@@ -8,78 +8,10 @@
 <script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>
 <script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
 <script src="congestion_scan.js"></script>
-<script>
-	var clientId = '503300089620-qnibfgon758ndl97cocv321lgkdujbnc.apps.googleusercontent.com';
-	var scopes = 'https://www.googleapis.com/auth/bigquery';
-
-	function handleClientLoad() {
-		window.setTimeout(checkAuth,1);
-	}
-	
-	function checkAuth() {
-		gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: true}, handleAuthResult);
-	}
-
-	function handleAuthResult(authResult) {
-		var authorizeButton = document.getElementById('authorize-button');
-		if (authResult && !authResult.error) {
-			authorizeButton.style.visibility = 'hidden';
-			makeApiCall();
-		} else {
-			authorizeButton.style.visibility = '';
-			authorizeButton.onclick = handleAuthClick;
-		}
-	}
-
-	function handleAuthClick(event) {
-		gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
-		return false;
-	}
-
-	function makeApiCall() {
-		szQuery = "SELECT segment_begin, segment_end, sort_key, [month], [day], [hour], [minute], speed, avg_speed, confidence_score " +
-					"FROM INRIX_2012_Quarter2.INRIX_2012_Quarter2_All AS data JOIN INRIX_2012_General.INRIX_2012_TMC_Lookup AS geo ON data.tmc = geo.tmc " +
-					"WHERE [month] = 4 AND [day] = 3 AND [hour] = 8 AND [minute] < 10 AND road_number = 'I-90' AND direction = 'Eastbound'";
-		gapi.client.load('bigquery', 'v2', function() {
-			var request = gapi.client.bigquery.jobs.query({
-				"projectId": "ctps-traffic-1",
-				"kind": "bigquery#queryRequest",
-				"query": szQuery,
-				"maxResults": 10000,
-				"timeoutMs": 10000,
-				"dryRun": false,
-				"useQueryCache": true
-			});
-			request.then(
-				function(resp) {
-					console.log(resp);
-					if (!resp.result.jobComplete) {
-						alert("The query is executing with job ID " + resp.result.jobReference.jobId + ", but is not yet complete.");
-					} else {
-						$('body').append('<table id="ResultTable"><thead><tr id="TableHeaderRow"></tr></thead><tbody id="TableBody"></tbody></table>');
-						for (i=0; i<resp.result.schema.fields.length; i++) {
-							$('#TableHeaderRow').append('<th>' + resp.result.schema.fields[0].name + '</th>');
-						}
-						for (j=0; j<resp.result.rows.length; j++) {
-							szRowHTML = '';
-							for (i=0; i<resp.result.rows[j].f.length; i++) {
-								szRowHTML += '<td>' + resp.result.rows[j].f[i].v + '</td>';
-							}
-						$('#TableBody').append('<tr>' + szRowHTML + '</tr>');
-						}
-					}
-				},
-				function(resp) {
-					alert("Unfortunately the query attempt did not succeed.");
-				});
-		});
-	}
-
-</script>
-<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+<script src="https://apis.google.com/js/client.js"></script>
 </head>
 
-<body>
-    <button id="authorize-button" style="visibility: hidden">Authorize</button>
+<body onload="CTPS.scanApp.handleClientLoad()">
+    <button id="authorize-button" style="visibility: hidden">Log in to Congestion Scan Application</button>
 </body>
 </html>
