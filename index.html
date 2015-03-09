@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>D3 Test</title>
+	
+	<script src="jquery-1.4.2/jquery-1.4.2.min.js"></script>
+
+	<script src="d3-3.5.3/d3.min.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+	d3.csv("http://localhost:8888/d3work/test2.csv", function(data) {
+	
+			
+		var axisXScale = d3.scale.linear()
+            .domain([0,9])
+            .range([0,250]);
+			
+		var xAxis = d3.svg.axis()
+			.scale(axisXScale)
+			.orient('bottom');
+		
+		var axisYScale = d3.scale.linear()
+            .domain([0,21])
+            .range([0,-550]);
+			
+		var yAxis = d3.svg.axis()
+			.scale(axisYScale)
+			.orient("left");			
+	
+		var svgContainer = d3.select('body')
+			.append('svg')
+				.attr('width', 620)
+				.attr('height',620)
+			.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(40,550)")
+				.call(xAxis)
+			.append("g")
+				.attr("class", "y axis")
+				.call(yAxis);
+
+		var rectangle = svgContainer.selectAll('rect')
+			.data(data)
+			.enter()
+				.append('rect')
+				.attr('x', function(d) {return 0+(d.minute*25);})
+				.attr('y', function(d) {return -(d.Serial*25);})
+				.attr('width', 25)
+				.attr('height', 25)			
+				.style("fill", function(d) 	{ if (d.speed <= 25) {return "red"}
+												else if (d.speed <= 45) {return "orange"}
+													else {return "green"};					 
+											;});
+	});
+	
+</script>
+Hey
+</body>
+</html>
