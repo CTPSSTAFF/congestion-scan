@@ -11,7 +11,17 @@
 <script src="https://apis.google.com/js/client.js"></script>
 </head>
 
-<body onload="CTPS.scanApp.handleClientLoad()">
+<body onLoad="CTPS.scanApp.handleClientLoad()">
     <button id="authorize-button" style="visibility: hidden">Log in to Congestion Scan Application</button>
+    <div id="queryDiv">
+    	<h1>Specify query and submit it</h1>
+    	<form>
+        	<textarea id="theQuery"></textarea>
+            <button id="querySubmit">Submit query</button>
+        </form>
+        <div id="onScreenTimer"></div>
+    </div>
+    <div id="resultDiv">
+    </div>
 </body>
 </html>
