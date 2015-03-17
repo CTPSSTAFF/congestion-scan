@@ -1,15 +1,27 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Untitled Document</title>
+<title>Congestion Scans from Boston Region MPO INRIX Data</title>
+<link rel="stylesheet" type="text/css" href="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/css/cupertino/jquery-ui-1.10.4.custom.css" />
 <link rel="stylesheet" type="text/css" href="congestion_scan.css" />
-<script src="congestion_scan.js">
+<script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>
+<script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
+<script src="congestion_scan.js"></script>
+<script src="https://apis.google.com/js/client.js"></script>
 </head>
 
-<body>
-A Change.
-a further change.
-Yet another change.
+<body onLoad="CTPS.scanApp.handleClientLoad()">
+    <button id="authorize-button" style="visibility: hidden">Log in to Congestion Scan Application</button>
+    <div id="queryDiv">
+    	<h1>Specify query and submit it</h1>
+    	<form>
+        	<textarea id="theQuery"></textarea>
+            <button id="querySubmit">Submit query</button>
+        </form>
+        <div id="onScreenTimer"></div>
+    </div>
+    <div id="resultDiv">
+    </div>
 </body>
 </html>
