@@ -7,6 +7,7 @@
 <link rel="stylesheet" type="text/css" href="congestion_scan.css" />
 <script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>
 <script src="/apps/libs/jqueryui/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
+<script src="/apps/libs/d3/d3-3.5.3/d3.min.js"></script>
 <script src="congestion_scan.js"></script>
 <script src="https://apis.google.com/js/client.js"></script>
 </head>
@@ -16,12 +17,19 @@
     <div id="queryDiv">
     	<h1>Specify query and submit it</h1>
     	<form>
+        	<label for="queryRouteList">Route: </label><select id="queryRouteList"><option value="I-90">I-90</option></select>
+            <label for="queryRouteDir">Direction: </label><select id="queryRouteDir"><option value="Northbound">Northbound</option><option value="Southbound">Southbound</option>
+            	<option value="Eastbound">Eastbound</option><option value="Westbound">Westbound</option>
+            </select>
+            <label for="queryDate">Date: </label><input id="queryDate" type="text" >
         	<textarea id="theQuery"></textarea>
             <button id="querySubmit">Submit query</button>
         </form>
         <div id="onScreenTimer"></div>
     </div>
     <div id="resultDiv">
+		<div id="vizDiv"></div>
+		<div id="tableDiv"></div>
     </div>
 </body>
 </html>
