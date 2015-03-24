@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>D3 Test</title>
+	
+	<script src="jquery-1.4.2/jquery-1.4.2.min.js"></script>
+
+	<script src="d3-3.5.3/d3.min.js"></script>
+	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+</head>
+
+<style>
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+
+<body>
+
+<script type="text/javascript">
+function makeGettersFromSchema(schema) {
+	var getters = {};
+	var i;;
+	var fields = schema.fields;
+	for (i = 0; i < fields.length; i++) {
+		getters[fields[i].name] = new Function("row", "{ return row.f[" + i + "].v; };");
+	}
+	return getters;
+}
+
+d3.json("http://localhost:8888/d3work/bigtest.json", 
+		function(data) {
+			var getters = makeGettersFromSchema(data.schema);
+			createViz(data.rows, getters);
+		});
+			
+function createViz(data, getters) {
+
+		var metersMile = 1609.34;
+			
+		/* Axes */
+
+		var xAxisStart = 0;
+			
+		var xAxisEnd = 60;			
+		
+		var axisXScale = d3.scale.linear()
+            .domain([xAxisStart,xAxisEnd])
+            .range([0,1200]);
+			
+		var xAxis = d3.svg.axis()
+			.scale(axisXScale)
+			.orient('bottom');
+			
+		var yAxisStart = (d3.min(data, function(d) { return(+getters.from(d)); })/metersMile);
+			
+		var yAxisEnd = (d3.max(data, function(d) { return(+getters.to(d)); })/metersMile);	
+				
+		var axisYScale = d3.scale.linear()
+            .domain([yAxisStart,yAxisEnd])
+            .range([0,-750]);
+			
+		var yAxis = d3.svg.axis()
+			.scale(axisYScale)
+			.orient("left");
+		
+		var routeBeginMarker = (d3.min(data, function(d) {return(+getters.from(d)); })/metersMile);		
+		var routeEndMarker = (d3.max(data, function(d) { return(+getters.to(d)); })/metersMile);
+		var routeLength = routeEndMarker - routeBeginMarker	
+
+		var svgContainer = d3.select('body')
+			.append('svg')
+				.attr('width', 1400)
+				.attr('height',900)
+			.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(40,850)")
+				.call(xAxis)				
+			.append("g")
+				.attr("class", "y axis")
+				.call(yAxis);
+				
+		var xAxisText = "Minutes";	
+		var yAxisText = "Miles";			
+				
+		svgContainer.append("text")
+			.attr("class", "label")
+			.attr("x", 600)
+			.attr("y", 40)
+			.style("text-anchor", "middle")
+			.text(xAxisText);
+
+		svgContainer.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("x", 400) 
+			.attr("y", -30)
+			.style("text-anchor", "middle")
+			.text(yAxisText);
+
+		var colorThreshold = d3.scale.threshold()
+			.domain([25, 45, 999])
+			.range(["rgb(255,0,0)", "rgb(255,195,77)", "rgb(130,255,46)"]);
+			
+		/* D3 Tooltip Used for Mouse Over */	
+
+		var tip = d3.tip()
+			.attr('class', 'd3-tip')
+			.offset([-5, 0])
+			.html(function(d) {return "<strong>From:&nbsp;</strong><span>" + (getters.segment_begin(d)) + "<br>" +
+				"<strong>To:&nbsp;</strong><span>" + (getters.segment_end(d)) + "<br>" +
+				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +				
+				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" })	
+
+		svgContainer.call(tip);	
+
+		/* Draw Rectangles */	
+
+		var rectangle = svgContainer.selectAll('rect')
+			.data(data)
+			.enter()
+				.append('rect')
+				.attr('x', function(d) {return 0+(+getters.minute(d)*20);})
+				/* 	Find end of route segment location as percentage of total route length
+						( segment "to" mile marker - route begin mile marker) / total route length 
+					Then multiply by y axis height to find chart location of top of route segment band
+						(negative offset from bottom of y axis) */
+				.attr('y', function(d) {return -750*(((+getters.to(d)/metersMile) - routeBeginMarker)/routeLength);})
+				.attr('width', 20)
+				/* 	Find route segment length as percentage of total route length
+						( segment "to" mile marker - segment "from" mile marker) / total route length 
+					Then multiply by y axis height to the height of the route segment band
+						(positive offset from the top of segment band on y axis) */				
+				.attr('height', function(d) {return (((+getters.to(d)/metersMile) - (+getters.from(d)/metersMile))/routeLength)*750;})
+				.style("fill", function(d) { return colorThreshold(+getters.speed(d)); })
+				.on('mouseover', tip.show)
+				.on('mouseout', tip.hide);
+				
+		/* From Location Labelling */		
+		
+		var nestedData = d3.nest()
+			.key(function(d) { return(getters.segment_begin(d) ) }).sortKeys(d3.ascending)	
+			.rollup(function(d) { return d3.min(d, function(g) {return +getters.from(g)}) })
+			.entries(data);
+			
+		var a = 0;	
+			
+		svgContainer.selectAll(".road_label")
+			.data(nestedData)
+			.enter()
+			.append("text")
+				.classed("road_label", true)
+				.text(function(d) {return (d.key)})	
+				.attr("x", 1200)			
+				.attr("y", function(d) {return -750*(((+d.values/metersMile) - routeBeginMarker)/routeLength);})
+				.style("text-anchor", "begin")
+				.style("font-family", "sans-serif")
+				.style("font-size", 10);
+	}
+	
+</script>
+
+</body>
+</html>
