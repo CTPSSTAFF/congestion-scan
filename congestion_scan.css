@@ -8,7 +8,7 @@ body {
 table	{
 	border-collapse: collapse;
 }
-td {
+#resultDiv td {
 	font-family: "Courier New", Courier, monospace;
 	border: solid thin silver;
 	text-align: left;
@@ -41,14 +41,34 @@ h4 {
 	font-size:12.0pt;
 	margin-bottom:2pt;
 }
+table	{
+	width: 100%;
+	border-style: none;
+	border-width: 0;
+	vertical-align: top;
+}
+fieldset {
+	text-align: left;
+	border-style: inset;
+	margin: 5px;
+	padding: 5px;
+	width: auto;
+	display: inline-block;
+	vertical-align: top;
+}
 #queryDiv	{
 	background-color: #FFC;
 	border: thin dashed #CC6;
 	padding: 10px;
+	text-align: center;
+}
+#queryHourSpec	{
+	width: 50px;
 }
 #theQuery	{
-	width: 100%;
-	height: 4em;
+	width: 95%;
+	height: 8em;
+	padding: 5px 5px 5px 10px;
 }
 #resultDiv	{
 	font-family: Arial, Helvetica, sans-serif;

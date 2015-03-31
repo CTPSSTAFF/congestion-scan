@@ -17,13 +17,30 @@
     <div id="queryDiv">
     	<h1>Specify query and submit it</h1>
     	<form>
-        	<label for="queryRouteList">Route: </label><select id="queryRouteList"><option value="I-90">I-90</option></select>
-            <label for="queryRouteDir">Direction: </label><select id="queryRouteDir"><option value="Northbound">Northbound</option><option value="Southbound">Southbound</option>
-            	<option value="Eastbound">Eastbound</option><option value="Westbound">Westbound</option>
-            </select>
-            <label for="queryDate">Date: </label><input id="queryDate" type="text" >
-        	<textarea id="theQuery"></textarea>
-            <button id="querySubmit">Submit query</button>
+        	<table><tr><td width="275">
+                <fieldset id="queryLocationFieldset" title="Location parameters">
+                    <label for="queryRoute">Route: </label><input id="queryRoute" type="text"><br>
+                    <label for="queryRouteDir">Direction: </label><input id="queryRouteDir" type="text">
+                </fieldset>
+                <input id="queryIsConfidenceFilter" type="checkbox" checked><label for="queryIsConfidenceFilter">Exclude low quality records</label>
+            </td>
+            <td width="330">
+                <fieldset id="queryTimeFieldset" title="Temporal parameters">
+                    <label for="queryDate">Date: </label><input id="queryDate" type="text" >
+                    <fieldset id="queryPeriodFieldset" title="Period">
+                        <input id="queryHour" name="queryPeriod" type="radio"><label for="queryHour">Hour</label>
+                            <input id="queryHourSpec" type="text"><label for="queryHourSpec">1-24</label><br>
+                        <input id="queryPeakAM" name="queryPeriod" type="radio" checked="checked"><label for="queryPeakAM">AM Peak</label><br>
+                        <input id="queryPeakPM" name="queryPeriod" type="radio"><label for="queryPeakPM">PM Peak</label>
+                    </fieldset>
+                </fieldset>
+            </td>
+            <td>
+                <textarea id="theQuery"></textarea>
+            </td></tr></table>
+            <div>
+	            <button id="querySubmit">Submit query</button>
+            </div>
         </form>
         <div id="onScreenTimer"></div>
     </div>
