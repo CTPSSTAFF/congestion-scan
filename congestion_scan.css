@@ -72,6 +72,15 @@ fieldset {
 #loginDiv	{
 	display: none;
 }
+#logoutDiv	{
+	display: inline-block;
+	font-family: Arial Narrow, Arial, Helvetica, sans-serif;
+	font-size: 9pt;
+	visibility: hidden;
+}
+#logoutFrame	{
+	display: none;
+}
 #loadingDiv	{
 	display: none;
 	text-align: center;

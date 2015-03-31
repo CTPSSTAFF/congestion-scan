@@ -46,6 +46,9 @@ CTPS.scanApp.checkAuth = function() {
 CTPS.scanApp.handleAuthResult = function(authResult) {
 	if (authResult && !authResult.error) {
 		$('#loginDiv').hide();
+		$('#logoutFrame').load(function() { window.location.reload(); });
+		$('#logoutLink').click(function() { document.getElementById('logoutFrame').src = "https://www.google.com/accounts/Logout"; });
+		$('#logoutDiv').css("visibility", "visible");
 		$('#loadingDiv').show();
 		gapi.client.load('bigquery', 'v2', CTPS.scanApp.handleBigQueryAPILoad());
 	} else {
