@@ -3,7 +3,9 @@
 
 body {
 	padding: 10px 20px 0px 20px;
-	text-align: center
+	text-align: center;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
 }
 table	{
 	border-collapse: collapse;
@@ -11,6 +13,9 @@ table	{
 #resultDiv td {
 	font-family: "Courier New", Courier, monospace;
 	border: solid thin silver;
+	text-align: left;
+}
+td	{
 	text-align: left;
 }
 h1	{
@@ -56,20 +61,41 @@ fieldset {
 	display: inline-block;
 	vertical-align: top;
 }
+#theTitle	{
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	font-size:16.0pt;
+	font-weight: bold;
+	text-transform: uppercase;
+	line-height:17.5pt;
+	margin-bottom:4pt;
+}
+#loginDiv	{
+	display: none;
+}
+#loadingDiv	{
+	display: none;
+	text-align: center;
+	padding: 10%;
+	font-style: italic;
+}
 #queryDiv	{
 	background-color: #FFC;
 	border: thin dashed #CC6;
 	padding: 10px;
 	text-align: center;
+	display: none;
 }
 #queryHourSpec	{
 	width: 50px;
 }
 #theQuery	{
 	width: 95%;
-	height: 8em;
+	height: 7em;
 	padding: 5px 5px 5px 10px;
 }
 #resultDiv	{
 	font-family: Arial, Helvetica, sans-serif;
+}
+#resultTabsDiv	{
+	display: none;
 }
