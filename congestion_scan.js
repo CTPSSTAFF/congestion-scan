@@ -6,14 +6,33 @@ CTPS.scanApp.client_id = "503300089620-qnibfgon758ndl97cocv321lgkdujbnc.apps.goo
 CTPS.scanApp.project_id = "ctps-traffic-1";
 CTPS.scanApp.redirect_uri = encodeURIComponent("http://bostonmpo.org/apps/congestion_scan/congestion_scan.html");
 CTPS.scanApp.scope = 'https://www.googleapis.com/auth/bigquery';
-CTPS.scanApp.sampleQuery = "SELECT geo.TMC AS tmc, " +
-							"[from], [to], " +
-							"route_number, route_name, direction, segment_begin, segment_end, " +
-							"[month], [day], [hour], [minute], speed, confidence_score, c_value " +
-							"FROM INRIX_2012_Quarter2.INRIX_2012_Quarter2_All AS data JOIN I90_D3_Demo.CMP_Expressway_Segment_Data AS geo ON data.tmc = geo.TMC " +
-							"WHERE [month] = 4 AND [day] = 3 AND [hour] = 8 AND [minute] < 10 AND Route_Number = 'I-90' AND Direction = 'Eastbound'";
+CTPS.scanApp.query = {};
+CTPS.scanApp.query.szFieldList = "geo.TMC AS tmc, [from], [to], route_number, route_name, direction, segment_begin, segment_end, " + 
+								"[month], [day], [hour], [minute], speed, confidence_score, c_value ";
+CTPS.scanApp.query.arrTables = ["I90_D3_Demo.CMP_Expressway_Segment_Data",
+							   "INRIX_2012_Quarter1.INRIX_2012_Quarter1_All",
+							   "INRIX_2012_Quarter2.INRIX_2012_Quarter2_All",
+							   "INRIX_2012_Quarter3.INRIX_2012_Quarter3_All",
+							   "INRIX_2012_Quarter4.INRIX_2012_Quarter4_All"];
+CTPS.scanApp.query.szWhereQualityClause = "confidence_score >= 20 and c_value >= 75";
+
+CTPS.scanApp.arrRouteList = [{"label": "I-90", "value": "I-90", "dir": "East-West"}, 
+							 {"label": "I-93", "value": "I-93", "dir": "North-South"}, 
+							 {"label": "I-95", "value": "I-95", "dir": "North-South"},
+							 {"label": "I-290", "value": "I-290", "dir": "East-West"},
+							 {"label": "I-495", "value": "I-495", "dir": "North-South"}, 
+							 {"label": "Route 1", "value": "US-1", "dir": "North-South"},
+							 {"label": "Route 2", "value": "MA-2", "dir": "East-West"},
+							 {"label": "Route 3 (MA)", "value": "MA-3", "dir": "North-South"},
+							 {"label": "Route 3 (US)", "vaulue": "US-3", "dir": "North-South"},
+							 {"label": "Route 24", "value": "MA-24", "dir": "North-South"},
+							 {"label": "Route 128", "value": "MA-128", "dir": "North-South"}
+							 ]
+CTPS.scanApp["East-West"] = ["Eastbound", "Westbound"];
+CTPS.scanApp["North-South"] = ["Northbound", "Southbound"];
 
 CTPS.scanApp.handleClientLoad = function() {
+	$('#loadingDiv').show();
 	window.setTimeout(CTPS.scanApp.checkAuth,1);
 };
 
@@ -25,17 +44,19 @@ CTPS.scanApp.checkAuth = function() {
 }
 
 CTPS.scanApp.handleAuthResult = function(authResult) {
-	var authorizeButton = document.getElementById('authorize-button');
 	if (authResult && !authResult.error) {
-		authorizeButton.style.visibility = 'hidden';
+		$('#loginDiv').hide();
+		$('#loadingDiv').show();
 		gapi.client.load('bigquery', 'v2', CTPS.scanApp.handleBigQueryAPILoad());
 	} else {
-		authorizeButton.style.visibility = '';
-		authorizeButton.onclick = CTPS.scanApp.handleAuthClick;
+		$('#authorize-button').click(CTPS.scanApp.handleAuthClick);
+		$('#loadingDiv').hide();
+		$('#loginDiv').show();
 	}
 }
 
 CTPS.scanApp.handleAuthClick = function(event) {
+	$('#loginDiv').hide();
 	gapi.auth.authorize({"client_id": CTPS.scanApp.client_id, 
 						 "scope": CTPS.scanApp.scope, 
 						 "immediate": false}, 
@@ -44,31 +65,120 @@ CTPS.scanApp.handleAuthClick = function(event) {
 }
 
 CTPS.scanApp.handleBigQueryAPILoad = function() {
+	$('#loadingDiv').hide();
+	$('#loginDiv').hide();
 	$('#theQuery').val(CTPS.scanApp.sampleQuery);
 	$('#querySubmit').click(CTPS.scanApp.initiateQuery);
+	CTPS.scanApp.initializeQueryUI();
+}
+CTPS.scanApp.initializeQueryUI = function() {
+	$('#queryRoute').autocomplete({ "source": CTPS.scanApp.arrRouteList,
+								    "minLength": 0,
+									"autoFocus": true,
+									"change": CTPS.scanApp.makeQueryString,
+								    "select": function(e, ui) {
+										CTPS.scanApp.makeQueryString();
+										$('#queryRouteDir').val('');
+										$('#queryRouteDir').autocomplete({"source": CTPS.scanApp[ui.item.dir],
+																								 "autoFocus": true,
+																								 "minLength": 0,
+																								 "change": CTPS.scanApp.makeQueryString});
+										$('#queryRouteDir').focus(function() { $('#queryRouteDir').autocomplete("search", ""); });
+										}});
+	$('#queryRoute').focus(function() { $('#queryRoute').autocomplete("search", ""); });
+	$('#queryIsConfidenceFilter').change(CTPS.scanApp.makeQueryString);
+	$('#queryHourSpec').focus(function() { $('#queryHour').prop("checked","checked"); });
+	$('#queryHourSpec').change(function() { if(!$('#queryHour').prop("checked")) $('#queryHourSpec').val(""); CTPS.scanApp.makeQueryString() });
+	$('#queryPeakAM').change(CTPS.scanApp.makeQueryString);
+	$('#queryPeakPM').change(CTPS.scanApp.makeQueryString);
+	$('#queryHourSpec').spinner({ "minValue": 1,
+								"maxValue": 24,
+								"change": function(e) {
+									if (!parseInt(e.target.value)) e.target.value = 1;
+									CTPS.scanApp.makeQueryString();
+								}
+								});
+	$('#queryDate').datepicker({ "dateFormat": "mm/dd/yy", 
+							   "constrainInput": true, 
+							   "minDate": "01/01/12",
+							   "maxDate": "12/31/12",
+							   "defaultDate": "01/01/12",
+							   "changeMonth": true,
+							   "numberOfMonths": 1 });
+	$('#queryDate').change(function(e) {
+									var dateField = new Date(e.target.value), dateMin = new Date("01/01/12"), dateMax = new Date("12/31/12");
+									if (dateField > dateMax) e.target.value = "12/31/2012"
+									else if (dateField < dateMin) e.target.value = "01/01/2012";
+									CTPS.scanApp.makeQueryString();
+									});
 	$('#queryDiv').show();
+	$('#resultTabsDiv').tabs();
+}
+
+CTPS.scanApp.makeQueryString = function() {
+	var szQuery = "SELECT " + CTPS.scanApp.query.szFieldList + " \n\nFROM ", szWhereClause = "";
+	var oDate, iQuarter = 0, szHourRangeOption = $(":checked[name=queryPeriod]")[0].id;
+	
+	// add FROM tables
+	if ($('#queryDate').val()) {
+		oDate = new Date($('#queryDate').val());
+		iQuarter = Math.floor(oDate.getMonth() / 3) + 1;
+		szQuery += CTPS.scanApp.query.arrTables[iQuarter] + " AS data JOIN ";
+	}
+	szQuery += CTPS.scanApp.query.arrTables[0] + " AS geo " + (iQuarter ? " ON data.tmc = geo.TMC ": "");
+	
+	// construct WHERE clause, if specified
+	szWhereClause += (oDate ? ("[month] = " + (oDate.getMonth() + 1) + " AND [day] = " + oDate.getDate()): "");
+	// hour range specification depends on radio option selected
+	if (szHourRangeOption == "queryHour") {
+		szWhereClause += ($('#queryHourSpec').val() ? (szWhereClause ? " AND " : "") + "[hour] = " + $('#queryHourSpec').val(): "");
+	} else if (szHourRangeOption == "queryPeakAM") {
+		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 6 AND 9";
+	} else {
+		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 16 AND 19";
+	}
+	szWhereClause += ($('#queryRoute').val() ? (szWhereClause ? " AND " : "") + "Route_Number = '" + $('#queryRoute').val() + "'": "");
+	szWhereClause += ($('#queryRouteDir').val() ? (szWhereClause ? " AND " : "") + "Direction = '" + $('#queryRouteDir').val() + "'": "");
+	szWhereClause += ($('#queryIsConfidenceFilter').prop("checked") ? (szWhereClause ? " AND " : "") + CTPS.scanApp.query.szWhereQualityClause: "");
+	szQuery += (szWhereClause ? "\n\nWHERE " + szWhereClause : "");
+	
+	// add fixed SORT BY clause
+	szQuery += " \n\nORDER BY [from], [month], [day], [hour], [minute]"
+	$('#theQuery').val(szQuery)
+}
+
+CTPS.scanApp.isQueryLimited = function() {
+	return $('#theQuery').val().toUpperCase().indexOf("WHERE ") != -1
 }
 
 CTPS.scanApp.initiateQuery = function() {
-	$('#querySubmit').prop('disabled', true);
-	var request = gapi.client.bigquery.jobs.query({
-		"projectId": CTPS.scanApp.project_id,
-		"kind": "bigquery#queryRequest",
-		"query": $('#theQuery').val(),
-		"maxResults": 10000,
-		"timeoutMs": 10000,
-		"dryRun": false,
-		"useQueryCache": true
-	});
-	request.then(
-		CTPS.scanApp.handleQueryResults, // function that executes if the request succeeds in some way
-		function(resp) {				 // function that executes if the request fails altogether
-			console.log(resp);
-			$('#resultDiv').html('<h1>The query attempt failed.</h1><h2>Returned error message</h2>' + resp.result.error.message);
-			$('#querySubmit').prop('disabled', false);
-			CTPS.scanApp.clearOnScreenTimer();
+	if (CTPS.scanApp.isQueryLimited()) {
+		$('#resultHeadingDiv').html('');
+		$('#querySubmit').prop('disabled', true);
+		var request = gapi.client.bigquery.jobs.query({
+			"projectId": CTPS.scanApp.project_id,
+			"kind": "bigquery#queryRequest",
+			"query": $('#theQuery').val(),
+			"maxResults": 10000,
+			"timeoutMs": 10000,
+			"dryRun": false,
+			"useQueryCache": true
 		});
-	CTPS.scanApp.initOnScreenTimer();
+		request.then(
+			CTPS.scanApp.handleQueryResults, // function that executes if the request succeeds in some way
+			function(resp) {				 // function that executes if the request fails altogether
+				console.log(resp);
+				$('#resultTabsDiv').hide();
+				$('#resultHeadingDiv').html('<h1>The query attempt failed.</h1><h2>Returned error message</h2>' + resp.result.error.message);
+				$('#querySubmit').prop('disabled', false);
+				CTPS.scanApp.clearOnScreenTimer();
+			});
+		CTPS.scanApp.initOnScreenTimer();
+	} else {
+		$('#resultTabsDiv').hide();
+		$('#resultHeadingDiv').html("<h1>The query was not attempted.</h1><h2>Too many results expected</h2>" + 
+									"Your query's WHERE clause is not restrictive enough or is missing.<br>Make sure the location and temporal parameters are all specified.");
+	}
 	return false;
 }
 
@@ -93,15 +203,15 @@ CTPS.scanApp.clearOnScreenTimer = function() {
 }
 
 CTPS.scanApp.handleQueryResults = function(resp) {
-	console.log(resp);
-	
 	CTPS.scanApp.clearOnScreenTimer();
 	$('#querySubmit').prop('disabled', false);
 	
 	if (!resp.result.jobComplete) {
-		$('#resultDiv').html("<h1>The query is executing with job ID " + resp.result.jobReference.jobId + ", but is not yet complete.</h1>");
+		$('#resultTabsDiv').hide();
+		$('#resultHeadingDiv').html("<h1>The query is executing with job ID " + resp.result.jobReference.jobId + ", but is not yet complete.</h1>");
 	} else {
 		CTPS.scanApp.displayQueryResults(resp);
+		$('#resultTabsDiv').show();
 	}
 }
 
@@ -214,7 +324,8 @@ function createViz(data, getters) {
 }
 
 CTPS.scanApp.displayResultTable = function(resp) {
-	$('#tableDiv').html('<h1>Query results</h1><table id="ResultTable"><thead><tr id="TableHeaderRow"></tr></thead><tbody id="TableBody"></tbody></table>');
+	$('#resultHeadingDiv').html('<h1>Query results</h1>');
+	$('#tableDiv').html('<table id="ResultTable"><thead><tr id="TableHeaderRow"></tr></thead><tbody id="TableBody"></tbody></table>');
 	for (i=0; i<resp.result.schema.fields.length; i++) {
 		$('#TableHeaderRow').append('<th>' + resp.result.schema.fields[i].name + '</th>');
 	}

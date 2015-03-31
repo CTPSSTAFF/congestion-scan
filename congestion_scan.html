@@ -13,18 +13,53 @@
 </head>
 
 <body onLoad="CTPS.scanApp.handleClientLoad()">
-    <button id="authorize-button" style="visibility: hidden">Log in to Congestion Scan Application</button>
+	<div id="theTitle">On-Demand Congestion Scans from Boston Region MPO INRIX Data</div>
+	<div id="loginDiv">
+    	You're not currently logged in. <br>Due to the licensing restrictions on INRIX data, <br>you must log in to use this application.<br><br>
+	    <button id="authorize-button">Log in to Congestion Scan Application</button>
+    </div>
+    <div id="loadingDiv">Interface is loading...</div>
     <div id="queryDiv">
     	<h1>Specify query and submit it</h1>
     	<form>
-        	<textarea id="theQuery"></textarea>
-            <button id="querySubmit">Submit query</button>
+        	<table><tr><td width="275">
+                <fieldset id="queryLocationFieldset" title="Location parameters">
+                    <label for="queryRoute">Route: </label><input id="queryRoute" type="text"><br>
+                    <label for="queryRouteDir">Direction: </label><input id="queryRouteDir" type="text">
+                </fieldset>
+                <input id="queryIsConfidenceFilter" type="checkbox" checked><label for="queryIsConfidenceFilter">Exclude low quality records</label>
+            </td>
+            <td width="330">
+                <fieldset id="queryTimeFieldset" title="Temporal parameters">
+                    <label for="queryDate">Date: </label><input id="queryDate" type="text" >
+                    <fieldset id="queryPeriodFieldset" title="Period">
+                        <input id="queryHour" name="queryPeriod" type="radio"><label for="queryHour">Hour</label>
+                            <input id="queryHourSpec" type="text"><label for="queryHourSpec">1-24</label><br>
+                        <input id="queryPeakAM" name="queryPeriod" type="radio" checked="checked"><label for="queryPeakAM">AM Peak</label><br>
+                        <input id="queryPeakPM" name="queryPeriod" type="radio"><label for="queryPeakPM">PM Peak</label>
+                    </fieldset>
+                </fieldset>
+            </td>
+            <td>
+            	<label for="theQuery">The preceding controls build this query. If you know what you're doing, you can edit it directly before submitting it.</label><br>
+                <textarea id="theQuery"></textarea>
+            </td></tr></table>
+            <div>
+	            <button id="querySubmit">Submit query</button>
+            </div>
         </form>
         <div id="onScreenTimer"></div>
     </div>
     <div id="resultDiv">
-		<div id="vizDiv"></div>
-		<div id="tableDiv"></div>
+    	<div id="resultHeadingDiv"></div>
+        <div id="resultTabsDiv">
+        	<ul>
+            	<li><a href="#vizDiv">Scan Visualization</a></li>
+                <li><a href="#tableDiv">Data Table</a></li>
+            </ul>
+            <div id="vizDiv"></div>
+            <div id="tableDiv"></div>
+        </div>
     </div>
 </body>
 </html>
