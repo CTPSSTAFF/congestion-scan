@@ -238,13 +238,15 @@ CTPS.scanApp.displayQueryResults = function(resp) {
 
 function createViz(data, getters) {
 
+		d3.select("svg")
+			.remove();
+
 		var metersMile = 1609.34;
 			
 		/* Axes */
-
-		var xAxisStart = 0;
-			
-		var xAxisEnd = 60;			
+		
+		var xAxisStart = d3.min(data, function(d) { return(+getters.minute(d)); });
+		var xAxisEnd = d3.max(data, function(d) { return(+getters.minute(d)); });		
 		
 		var axisXScale = d3.scale.linear()
             .domain([xAxisStart,xAxisEnd])
@@ -260,7 +262,7 @@ function createViz(data, getters) {
 				
 		var axisYScale = d3.scale.linear()
             .domain([yAxisStart,yAxisEnd])
-            .range([0,-550]);
+            .range([0,-750]);
 			
 		var yAxis = d3.svg.axis()
 			.scale(axisYScale)
@@ -270,13 +272,13 @@ function createViz(data, getters) {
 		var routeEndMarker = (d3.max(data, function(d) { return(+getters.to(d)); })/metersMile);
 		var routeLength = routeEndMarker - routeBeginMarker	
 
-		var svgContainer = d3.select('#vizDiv').html('')
+		var svgContainer = d3.select('#vizDiv')
 			.append('svg')
-				.attr('width', 1270)
-				.attr('height',620)
+				.attr('width', 1400)
+				.attr('height',900)
 			.append("g")
 				.attr("class", "x axis")
-				.attr("transform", "translate(40,550)")
+				.attr("transform", "translate(40,850)")
 				.call(xAxis)				
 			.append("g")
 				.attr("class", "y axis")
@@ -289,23 +291,45 @@ function createViz(data, getters) {
 			.attr("class", "label")
 			.attr("x", 600)
 			.attr("y", 40)
-			.style("text-anchor", "end")
+			.style("text-anchor", "middle")
 			.text(xAxisText);
 
 		svgContainer.append("text")
 			.attr("transform", "rotate(-90)")
-			.attr("x", 310) 
+			.attr("x", 400) 
 			.attr("y", -30)
-			.style("text-anchor", "end")
+			.style("text-anchor", "middle")
 			.text(yAxisText);
-		
+
 		/* var colorThreshold = d3.scale.threshold()
-			.domain([24.99, 34.99, 45, 50, 55, 999])
-			.range(["rgb(0,0,115)", "rgb(153,0,247)", "rgb(255,0,0)", "rgb(245,150,0)", "rgb(245,240,0)", "rgb(130,255,46)"]);	*/
+			.domain([25, 45, 999])
+			.range(["rgb(255,0,0)", "rgb(255,195,77)", "rgb(130,255,46)"]);*/
+			
+		/*var colorThreshold = d3.scale.linear()
+			.domain([0,70])
+			.range(["#ff0000","#00ff00"]);*/
+			
+		/*var colorThreshold = d3.scale.ordinal()
+			.domain([25, 45, 999])
+			.range(colorbrewer.RdYlGn[3]);*/
 
 		var colorThreshold = d3.scale.threshold()
-			.domain([25, 45, 999])
-			.range(["rgb(255,0,0)", "rgb(255,195,77)", "rgb(130,255,46)"]);			
+			.domain([10, 20, 30, 40, 50, 60, 70, 80])
+			.range(colorbrewer.RdYlGn[8]);
+				
+		/* D3 Tooltip Used for Mouse Over */	
+
+		var tip = d3.tip()
+			.attr('class', 'd3-tip')
+			.offset([-5, 0])
+			.html(function(d) {return "<strong>From:&nbsp;</strong><span>" + (getters.segment_begin(d)) + "<br>" +
+				"<strong>To:&nbsp;</strong><span>" + (getters.segment_end(d)) + "<br>" +
+				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +				
+				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" })	
+
+		svgContainer.call(tip);	
+
+		/* Draw Rectangles */	
 
 		var rectangle = svgContainer.selectAll('rect')
 			.data(data)
@@ -316,15 +340,39 @@ function createViz(data, getters) {
 						( segment "to" mile marker - route begin mile marker) / total route length 
 					Then multiply by y axis height to find chart location of top of route segment band
 						(negative offset from bottom of y axis) */
-				.attr('y', function(d) {return -550*(((+getters.to(d)/metersMile) - routeBeginMarker)/routeLength);})
+				.attr('y', function(d) {return -750*(((+getters.to(d)/metersMile) - routeBeginMarker)/routeLength);})
 				.attr('width', 20)
 				/* 	Find route segment length as percentage of total route length
 						( segment "to" mile marker - segment "from" mile marker) / total route length 
 					Then multiply by y axis height to the height of the route segment band
 						(positive offset from the top of segment band on y axis) */				
-				.attr('height', function(d) {return (((+getters.to(d)/metersMile) - (+getters.from(d)/metersMile))/routeLength)*550;})
-				.style("fill", function(d) { return colorThreshold(+getters.speed(d)); });
-}
+				.attr('height', function(d) {return (((+getters.to(d)/metersMile) - (+getters.from(d)/metersMile))/routeLength)*750;})
+				.style("fill", function(d) { return colorThreshold(+getters.speed(d)); })
+				.on('mouseover', tip.show)
+				.on('mouseout', tip.hide);
+				
+		/* From Location Labelling */		
+		
+		var nestedData = d3.nest()
+			.key(function(d) { return(getters.segment_begin(d) ) }).sortKeys(d3.ascending)	
+			.rollup(function(d) { return d3.min(d, function(g) {return +getters.from(g)}) })
+			.entries(data);
+			
+		var a = 0;	
+			
+		svgContainer.selectAll(".road_label")
+			.data(nestedData)
+			.enter()
+			.append("text")
+				.classed("road_label", true)
+				.text(function(d) {return (d.key)})	
+				.attr("x", 1200)			
+				.attr("y", function(d) {return -750*(((+d.values/metersMile) - routeBeginMarker)/routeLength);})
+				.style("text-anchor", "begin")
+				.style("font-family", "sans-serif")
+				.style("font-size", 10);
+	};
+
 
 CTPS.scanApp.displayResultTable = function(resp) {
 	$('#resultHeadingDiv').html('<h1>Query results</h1>');
