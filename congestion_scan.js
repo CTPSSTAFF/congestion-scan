@@ -326,25 +326,36 @@ function createViz(data, getters) {
 			.html(function(d) {return "<strong>From:&nbsp;</strong><span>" + (getters.segment_begin(d)) + "<br>" +
 				"<strong>To:&nbsp;</strong><span>" + (getters.segment_end(d)) + "<br>" +
 				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +				
-				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" })	
+				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" });	
 
 		svgContainer.call(tip);	
 
 		/* Draw Rectangles */	
 
+		var minHour = d3.min(data, function(d) { return(+getters.hour(d)); });
+		var maxHour = d3.max(data, function(d) { return(+getters.hour(d)); });		
+
 		var rectangle = svgContainer.selectAll('rect')
 			.data(data)
 			.enter()
 				.append('rect')
-				.attr('x', function(d) {return 0+(+getters.minute(d)*20);})
+				/* 	Find x-direction start location for a particular cell
+						Based on sequence number within the range of all minutes of selected hours
+							multiplied by cell 
+						Minutes in previous hours = ((+getters.hour(d)-minHour)*60)
+						Minute position within current hour = (+getters.minute(d))
+						Cell width in x direction = (((maxHour-minHour)*60)+60)
+				*/				
+				.attr('x', function(d) {return (((+getters.hour(d)-minHour)*60)+(+getters.minute(d)))*(1200/(((maxHour-minHour)*60)+60));})
 				/* 	Find end of route segment location as percentage of total route length
-						( segment "to" mile marker - route begin mile marker) / total route length 
+						(segment "to" mile marker - route begin mile marker) / total route length 
 					Then multiply by y axis height to find chart location of top of route segment band
 						(negative offset from bottom of y axis) */
 				.attr('y', function(d) {return -750*(((+getters.to(d)/metersMile) - routeBeginMarker)/routeLength);})
-				.attr('width', 20)
+				/* Calculate cell width by dividing total width of x axis(1200) by the number of minutes within selected hour range */
+				.attr('width', function(d) {return (1200/(((maxHour-minHour)*60)+60));})
 				/* 	Find route segment length as percentage of total route length
-						( segment "to" mile marker - segment "from" mile marker) / total route length 
+						(segment "to" mile marker - segment "from" mile marker) / total route length 
 					Then multiply by y axis height to the height of the route segment band
 						(positive offset from the top of segment band on y axis) */				
 				.attr('height', function(d) {return (((+getters.to(d)/metersMile) - (+getters.from(d)/metersMile))/routeLength)*750;})
@@ -372,7 +383,7 @@ function createViz(data, getters) {
 				.style("text-anchor", "begin")
 				.style("font-family", "sans-serif")
 				.style("font-size", 10);
-	};
+}
 
 
 CTPS.scanApp.displayResultTable = function(resp) {
