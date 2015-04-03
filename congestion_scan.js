@@ -92,6 +92,7 @@ CTPS.scanApp.initializeQueryUI = function() {
 	$('#queryIsConfidenceFilter').change(CTPS.scanApp.makeQueryString);
 	$('#queryHourSpec').focus(function() { $('#queryHour').prop("checked","checked"); });
 	$('#queryHourSpec').change(function() { if(!$('#queryHour').prop("checked")) $('#queryHourSpec').val(""); CTPS.scanApp.makeQueryString() });
+	$('#queryHour').change(CTPS.scanApp.makeQueryString);
 	$('#queryPeakAM').change(CTPS.scanApp.makeQueryString);
 	$('#queryPeakPM').change(CTPS.scanApp.makeQueryString);
 	$('#queryHourSpec').spinner({ "minValue": 1,
