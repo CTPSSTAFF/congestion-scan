@@ -242,28 +242,29 @@ function createViz(data, getters) {
 		d3.select("svg")
 			.remove();
 
-		var metersMile = 1609.34;
+			var metersMile = 1609.34;
 			
 		/* Axes */
 		
 		for (var i=0;i<data.length; i++){
-			var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
-			data[i].f[15] = {"v":newString};
-		};
+				var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
+				data[i].f[15] = {"v":newString};
+			};
 			
 		formatHM = d3.time.format("%H:%M %p");
 
 		var xAxisStart = d3.min(data, function(d) { return(d.f[15].v); });
 		var xAxisEnd0 = d3.max(data, function(d) { return(d.f[15].v); });
-		var xAxisEnd = xAxisEnd0.setSeconds(xAxisEnd0.getSeconds() + 60);		
-		
-		var axisXScale = d3.scale.linear()
-            		.domain([xAxisStart,xAxisEnd])
-        		 .range([0,1200]);
+		var xAxisEnd = xAxisEnd0.setSeconds(xAxisEnd0.getSeconds() + 60);
+
+		var axisXScale = d3.time.scale()
+			.domain([xAxisStart, xAxisEnd])
+			.range([0, 1200]);
 			
 		var xAxis = d3.svg.axis()
 			.scale(axisXScale)
-			.orient('bottom');
+			.orient('bottom')
+			.tickFormat(formatHM);
 			
 		var yAxisStart = (d3.min(data, function(d) { return(+getters.from(d)); })/metersMile);
 			
@@ -333,6 +334,7 @@ function createViz(data, getters) {
 			.offset([-5, 0])
 			.html(function(d) {return "<strong>From:&nbsp;</strong><span>" + (getters.segment_begin(d)) + "<br>" +
 				"<strong>To:&nbsp;</strong><span>" + (getters.segment_end(d)) + "<br>" +
+				"<strong>Hour:&nbsp;</strong><span>" + (getters.hour(d)) + "<br>" +					
 				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +				
 				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" });	
 
