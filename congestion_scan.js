@@ -246,12 +246,20 @@ function createViz(data, getters) {
 			
 		/* Axes */
 		
-		var xAxisStart = d3.min(data, function(d) { return(+getters.minute(d)); });
-		var xAxisEnd = d3.max(data, function(d) { return(+getters.minute(d)); });		
+		for (var i=0;i<data.length; i++){
+			var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
+			data[i].f[15] = {"v":newString};
+		};
+			
+		formatHM = d3.time.format("%H:%M %p");
+
+		var xAxisStart = d3.min(data, function(d) { return(d.f[15].v); });
+		var xAxisEnd0 = d3.max(data, function(d) { return(d.f[15].v); });
+		var xAxisEnd = xAxisEnd0.setSeconds(xAxisEnd0.getSeconds() + 60);		
 		
 		var axisXScale = d3.scale.linear()
-            .domain([xAxisStart,xAxisEnd])
-            .range([0,1200]);
+            		.domain([xAxisStart,xAxisEnd])
+        		 .range([0,1200]);
 			
 		var xAxis = d3.svg.axis()
 			.scale(axisXScale)
