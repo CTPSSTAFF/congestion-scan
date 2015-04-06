@@ -137,9 +137,9 @@ CTPS.scanApp.makeQueryString = function() {
 	if (szHourRangeOption == "queryHour") {
 		szWhereClause += ($('#queryHourSpec').val() ? (szWhereClause ? " AND " : "") + "[hour] = " + $('#queryHourSpec').val(): "");
 	} else if (szHourRangeOption == "queryPeakAM") {
-		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 6 AND 9";
+		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 6 AND 8";
 	} else {
-		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 16 AND 19";
+		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 16 AND 18";
 	}
 	szWhereClause += ($('#queryRoute').val() ? (szWhereClause ? " AND " : "") + "Route_Number = '" + $('#queryRoute').val() + "'": "");
 	szWhereClause += ($('#queryRouteDir').val() ? (szWhereClause ? " AND " : "") + "Direction = '" + $('#queryRouteDir').val() + "'": "");
