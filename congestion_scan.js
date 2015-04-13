@@ -110,7 +110,7 @@ CTPS.scanApp.initializeQueryUI = function() {
 							   "changeMonth": true,
 							   "numberOfMonths": 1 });
 	$('#queryDate').change(function(e) {
-									var dateField = new Date(e.target.value), dateMin = new Date("01/01/12"), dateMax = new Date("12/31/12");
+									var dateField = new Date(e.target.value), dateMin = new Date("01/01/2012"), dateMax = new Date("12/31/2012");
 									if (dateField > dateMax) e.target.value = "12/31/2012"
 									else if (dateField < dateMin) e.target.value = "01/01/2012";
 									CTPS.scanApp.makeQueryString();
@@ -163,7 +163,7 @@ CTPS.scanApp.initiateQuery = function() {
 			"projectId": CTPS.scanApp.project_id,
 			"kind": "bigquery#queryRequest",
 			"query": $('#theQuery').val(),
-			"maxResults": 10000,
+			//"maxResults": 10000,
 			"timeoutMs": 10000,
 			"dryRun": false,
 			"useQueryCache": true
@@ -246,16 +246,20 @@ function createViz(data, getters) {
 			
 		/* Axes */
 		
-		for (var i=0;i<data.length; i++){
+		/* Create new field in JSON data array (cell [15]) to contain JavaScript date/time formatted data */
+		
+		for (var i=0;i < data.length; i++){
 				var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
 				data[i].f[15] = {"v":newString};
 			};
-			
+		
+		/* Create format for annotation of X axis */		
 		formatHM = d3.time.format("%H:%M %p");
-
+		
+		/* Determine begin and end time for X axis, adding one minute to end time so end of hour tick shows up */
 		var xAxisStart = d3.min(data, function(d) { return(d.f[15].v); });
-		var xAxisEnd0 = d3.max(data, function(d) { return(d.f[15].v); });
-		var xAxisEnd = xAxisEnd0.setSeconds(xAxisEnd0.getSeconds() + 60);
+		var xAxisEnd_Actual = d3.max(data, function(d) { return(d.f[15].v); });
+		var xAxisEnd = xAxisEnd_Actual.setSeconds(xAxisEnd_Actual.getSeconds() + 60);
 
 		var axisXScale = d3.time.scale()
 			.domain([xAxisStart, xAxisEnd])
@@ -294,7 +298,7 @@ function createViz(data, getters) {
 				.attr("class", "y axis")
 				.call(yAxis);
 				
-		var xAxisText = "Minutes";	
+		var xAxisText = "Time";	
 		var yAxisText = "Miles";			
 				
 		svgContainer.append("text")
@@ -373,17 +377,32 @@ function createViz(data, getters) {
 				.on('mouseover', tip.show)
 				.on('mouseout', tip.hide);
 				
-		/* From Location Labelling */		
+		/* From Location Labelling */
+
+		/* Create an array of Segment Begin description and From location, sorting on From location */
 		
-		var nestedData = d3.nest()
-			.key(function(d) { return(getters.segment_begin(d) ) }).sortKeys(d3.ascending)	
+		var segmentYAnno = d3.nest()
+			.key(function(d) { return(getters.segment_begin(d) ) })	
 			.rollup(function(d) { return d3.min(d, function(g) {return +getters.from(g)}) })
+			.sortValues(function(a,b) { return parseFloat(a.values) - parseFloat(b.values);  })
 			.entries(data);
 			
-		var a = 0;	
+		/* Threshold for adjacent Begin Segment annotation, where no two annotations can be within a 15px limit */	
+			
+		var annoThreshold = (routeLength * 1609.34) * (15 / 900);
+
+		/* Loop through Segment Annotation array
+			where difference between From location of current segment and next segment is less than the Threshold
+			set Segment Annotation to null*/
+		
+		for (var i = 0;i < segmentYAnno.length - 1; i++){
+			if ((segmentYAnno[i+1].values - segmentYAnno[i].values) < annoThreshold) {segmentYAnno[i].key = null;};
+		};	
+
+		/* Create a second y axis annotation with Segment Begin description to the right of the display */
 			
 		svgContainer.selectAll(".road_label")
-			.data(nestedData)
+			.data(segmentYAnno)
 			.enter()
 			.append("text")
 				.classed("road_label", true)

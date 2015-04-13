@@ -54,7 +54,7 @@ table	{
 }
 fieldset {
 	text-align: left;
-	border-style: inset;
+	border-width: 0;
 	margin: 5px;
 	padding: 5px;
 	width: auto;
