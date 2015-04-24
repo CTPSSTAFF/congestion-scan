@@ -14,7 +14,7 @@ CTPS.scanApp.query.arrTables = ["I90_D3_Demo.CMP_Expressway_Segment_Data",
 							   "INRIX_2012_Quarter2.INRIX_2012_Quarter2_All",
 							   "INRIX_2012_Quarter3.INRIX_2012_Quarter3_All",
 							   "INRIX_2012_Quarter4.INRIX_2012_Quarter4_All"];
-CTPS.scanApp.query.szWhereQualityClause = "confidence_score >= 20 and c_value >= 75";
+CTPS.scanApp.query.szWhereQualityClause = "confidence_score >= 30 and c_value >= 75";
 
 CTPS.scanApp.arrRouteList = [{"label": "I-90", "value": "I-90", "dir": "East-West"}, 
 							 {"label": "I-93", "value": "I-93", "dir": "North-South"}, 
