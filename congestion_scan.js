@@ -8,7 +8,7 @@ CTPS.scanApp.redirect_uri = encodeURIComponent("http://bostonmpo.org/apps/conges
 CTPS.scanApp.scope = 'https://www.googleapis.com/auth/bigquery';
 CTPS.scanApp.query = {};
 CTPS.scanApp.query.szFieldList = "geo.TMC AS tmc, [from], [to], route_number, route_name, direction, segment_begin, segment_end, " + 
-								"[month], [day], [hour], [minute], speed, confidence_score, c_value, speed_limit ";
+								"[month], [day], [hour], [minute], speed, confidence_score, c_value, geo.Speed_Limit AS speed_limit ";
 CTPS.scanApp.query.arrTables = ["I90_D3_Demo.CMP_Expressway_Segment_Data",
 							   "INRIX_2012_Quarter1.INRIX_2012_Quarter1_All",
 							   "INRIX_2012_Quarter2.INRIX_2012_Quarter2_All",
