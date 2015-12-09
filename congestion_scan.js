@@ -246,19 +246,19 @@ function createViz(data, getters) {
 			
 		/* Axes */
 		
-		/* Create new field in JSON data array (cell [15]) to contain JavaScript date/time formatted data */
-		
+		/* Create new field in JSON data array (cell [16]) to contain JavaScript date/time formatted data */
+
 		for (var i=0;i < data.length; i++){
 				var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
-				data[i].f[15] = {"v":newString};
+				data[i].f[16] = {"v":newString};
 			};
 		
 		/* Create format for annotation of X axis */		
 		formatHM = d3.time.format("%H:%M %p");
 		
 		/* Determine begin and end time for X axis, adding one minute to end time so end of hour tick shows up */
-		var xAxisStart = d3.min(data, function(d) { return(d.f[15].v); });
-		var xAxisEnd_Actual = d3.max(data, function(d) { return(d.f[15].v); });
+		var xAxisStart = d3.min(data, function(d) { return(d.f[16].v); });
+		var xAxisEnd_Actual = d3.max(data, function(d) { return(d.f[16].v); });
 		var xAxisEnd = xAxisEnd_Actual.setSeconds(xAxisEnd_Actual.getSeconds() + 60);
 
 		var axisXScale = d3.time.scale()
@@ -281,7 +281,7 @@ function createViz(data, getters) {
 		var yAxis = d3.svg.axis()
 			.scale(axisYScale)
 			.orient("left");
-		
+			
 		var routeBeginMarker = (d3.min(data, function(d) {return(+getters.from(d)); })/metersMile);		
 		var routeEndMarker = (d3.max(data, function(d) { return(+getters.to(d)); })/metersMile);
 		var routeLength = routeEndMarker - routeBeginMarker	
@@ -330,6 +330,10 @@ function createViz(data, getters) {
 		var colorThreshold = d3.scale.threshold()
 			.domain([10, 20, 30, 40, 50, 60, 70, 80])
 			.range(colorbrewer.RdYlGn[8]);
+
+		var colorThreshold2 = d3.scale.threshold()
+			.domain([.40, .50, .70, .90, 999])
+			.range(["rgb(230,0,169)", "rgb(169,0,230)", "rgb(0,112,255)", "rgb(155,178,255)", "rgb(190,210,255)"]);			
 				
 		/* D3 Tooltip Used for Mouse Over */	
 
@@ -339,8 +343,10 @@ function createViz(data, getters) {
 			.html(function(d) {return "<strong>From:&nbsp;</strong><span>" + (getters.segment_begin(d)) + "<br>" +
 				"<strong>To:&nbsp;</strong><span>" + (getters.segment_end(d)) + "<br>" +
 				"<strong>Hour:&nbsp;</strong><span>" + (getters.hour(d)) + "<br>" +					
-				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +				
-				"<strong>Speed:&nbsp;</strong>" + (getters.speed(d)) + "</span>" });	
+				"<strong>Minute:&nbsp;</strong><span>" + (getters.minute(d)) + "<br>" +	
+				"<strong>Speed:&nbsp;</strong><span>" + (getters.speed(d)) + "<br>" +	
+				"<strong>Speed Limit:&nbsp;</strong><span>" + (getters.speed_limit(d)) + "<br>" +					
+				"<strong>Speed Index:&nbsp;</strong>" + (getters.speed(d)/getters.speed_limit(d)).toFixed(2) + "</span>" });	
 
 		svgContainer.call(tip);	
 
@@ -373,7 +379,7 @@ function createViz(data, getters) {
 					Then multiply by y axis height to the height of the route segment band
 						(positive offset from the top of segment band on y axis) */				
 				.attr('height', function(d) {return (((+getters.to(d)/metersMile) - (+getters.from(d)/metersMile))/routeLength)*750;})
-				.style("fill", function(d) { return colorThreshold(+getters.speed(d)); })
+				.style("fill", function(d) { return colorThreshold2(+getters.speed(d)/+getters.speed_limit(d)); })
 				.on('mouseover', tip.show)
 				.on('mouseout', tip.hide);
 				
