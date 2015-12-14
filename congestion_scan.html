@@ -35,12 +35,17 @@
             </td>
             <td width="330">
                 <fieldset id="queryTimeFieldset" title="Temporal parameters">
-                    <label for="queryDate">Date: </label><input id="queryDate" type="text" >
+                	<fieldset id="queryDateFieldset" title="Dates">
+                    	<input id="queryCMPDates" name="queryDates" type="radio"><label for="queryCMPDates">All CMP-accepted days averaged together</label><br>
+                        <input id="querySingleDate" name="queryDates" type="radio" checked="checked"><label for="querySingleDate">Single Date</label>
+	                    	<input id="queryDate" type="text" >
+                    </fieldset>
                     <fieldset id="queryPeriodFieldset" title="Period">
                         <input id="queryHour" name="queryPeriod" type="radio"><label for="queryHour">Hour</label>
                             <input id="queryHourSpec" type="text"><label for="queryHourSpec">1-24</label><br>
                         <input id="queryPeakAM" name="queryPeriod" type="radio" checked="checked"><label for="queryPeakAM">AM Peak</label><br>
-                        <input id="queryPeakPM" name="queryPeriod" type="radio"><label for="queryPeakPM">PM Peak</label>
+                        <input id="queryPeakPM" name="queryPeriod" type="radio"><label for="queryPeakPM">PM Peak</label><br>
+                        <input id="queryAllDay" name="queryPeriod" type="radio"><label for="queryAllDay">All Day</label>
                     </fieldset>
                 </fieldset>
             </td>

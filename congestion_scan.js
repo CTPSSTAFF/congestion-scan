@@ -8,13 +8,14 @@ CTPS.scanApp.redirect_uri = encodeURIComponent("http://bostonmpo.org/apps/conges
 CTPS.scanApp.scope = 'https://www.googleapis.com/auth/bigquery';
 CTPS.scanApp.query = {};
 CTPS.scanApp.query.szFieldList = "geo.TMC AS tmc, [from], [to], route_number, route_name, direction, segment_begin, segment_end, " + 
-								"[month], [day], [hour], [minute], speed, confidence_score, c_value, geo.Speed_Limit AS speed_limit ";
+								"[month], [day], [hour], [minute], speed, confidence_score, c_value, geo.Speed_Limit AS speed_limit";
 CTPS.scanApp.query.arrTables = ["I90_D3_Demo.CMP_Expressway_Segment_Data",
 							   "INRIX_2012_Quarter1.INRIX_2012_Quarter1_All",
 							   "INRIX_2012_Quarter2.INRIX_2012_Quarter2_All",
 							   "INRIX_2012_Quarter3.INRIX_2012_Quarter3_All",
-							   "INRIX_2012_Quarter4.INRIX_2012_Quarter4_All"];
-CTPS.scanApp.query.szWhereQualityClause = "confidence_score >= 30 and c_value >= 75";
+							   "INRIX_2012_Quarter4.INRIX_2012_Quarter4_All",
+							   "INRIX_2012_CMP_Dates.INRIX_2012_CMP_Dates"];
+CTPS.scanApp.query.szWhereQualityClause = "data.confidence_score >= 30 and data.c_value >= 75";
 
 CTPS.scanApp.arrRouteList = [{"label": "I-90", "value": "I-90", "dir": "East-West"}, 
 							 {"label": "I-93", "value": "I-93", "dir": "North-South"}, 
@@ -30,6 +31,7 @@ CTPS.scanApp.arrRouteList = [{"label": "I-90", "value": "I-90", "dir": "East-Wes
 							 ]
 CTPS.scanApp["East-West"] = ["Eastbound", "Westbound"];
 CTPS.scanApp["North-South"] = ["Northbound", "Southbound"];
+CTPS.scanApp.arrResults = [];
 
 CTPS.scanApp.handleClientLoad = function() {
 	$('#loadingDiv').show();
@@ -90,18 +92,8 @@ CTPS.scanApp.initializeQueryUI = function() {
 										}});
 	$('#queryRoute').focus(function() { $('#queryRoute').autocomplete("search", ""); });
 	$('#queryIsConfidenceFilter').change(CTPS.scanApp.makeQueryString);
-	$('#queryHourSpec').focus(function() { $('#queryHour').prop("checked","checked"); });
-	$('#queryHourSpec').change(function() { if(!$('#queryHour').prop("checked")) $('#queryHourSpec').val(""); CTPS.scanApp.makeQueryString() });
-	$('#queryHour').change(CTPS.scanApp.makeQueryString);
-	$('#queryPeakAM').change(CTPS.scanApp.makeQueryString);
-	$('#queryPeakPM').change(CTPS.scanApp.makeQueryString);
-	$('#queryHourSpec').spinner({ "minValue": 1,
-								"maxValue": 24,
-								"change": function(e) {
-									if (!parseInt(e.target.value)) e.target.value = 1;
-									CTPS.scanApp.makeQueryString();
-								}
-								});
+	$('#queryCMPDates').change(CTPS.scanApp.makeQueryString);
+	$('#querySingleDate').change(CTPS.scanApp.makeQueryString);
 	$('#queryDate').datepicker({ "dateFormat": "mm/dd/yy", 
 							   "constrainInput": true, 
 							   "minDate": "01/01/12",
@@ -113,38 +105,79 @@ CTPS.scanApp.initializeQueryUI = function() {
 									var dateField = new Date(e.target.value), dateMin = new Date("01/01/2012"), dateMax = new Date("12/31/2012");
 									if (dateField > dateMax) e.target.value = "12/31/2012"
 									else if (dateField < dateMin) e.target.value = "01/01/2012";
+									$('#querySingleDate').prop("checked",true);
 									CTPS.scanApp.makeQueryString();
 									});
+	$('#queryHourSpec').focus(function() { $('#queryHour').prop("checked","checked"); });
+	$('#queryHourSpec').change(function() { if(!$('#queryHour').prop("checked")) $('#queryHourSpec').val(""); CTPS.scanApp.makeQueryString() });
+	$('#queryHour').change(CTPS.scanApp.makeQueryString);
+	$('#queryPeakAM').change(CTPS.scanApp.makeQueryString);
+	$('#queryPeakPM').change(CTPS.scanApp.makeQueryString);
+	$('#queryAllDay').change(CTPS.scanApp.makeQueryString);
+	$('#queryHourSpec').spinner({ "minValue": 1,
+								"maxValue": 24,
+								"change": function(e) {
+									if (!parseInt(e.target.value)) e.target.value = 1;
+									CTPS.scanApp.makeQueryString();
+								}
+								});
 	$('#queryDiv').show();
 	$('#resultTabsDiv').tabs();
 }
 
 CTPS.scanApp.makeQueryString = function() {
-	var szQuery = "SELECT " + CTPS.scanApp.query.szFieldList + " \n\nFROM ", szWhereClause = "";
-	var oDate, iQuarter = 0, szHourRangeOption = $(":checked[name=queryPeriod]")[0].id;
+	var szQuery = "SELECT ", arrFromTables = [], szWhereClause = "";
+	var oDate, iQuarter = 0, arrQtrs = [], szDateRangeOption = $(":checked[name=queryDates]")[0].id; szHourRangeOption = $(":checked[name=queryPeriod]")[0].id;
+	
+	// add field list to select string, adding summary functions if multiple dates are being requested
+	szQuery +=  CTPS.scanApp.query.szFieldList.split(', ').map(function(a, index) {
+																			  if (szDateRangeOption == "queryCMPDates") {
+																				  if (a == "speed" || a == "confidence_score" || a == "c_value") return "avg(" + a + ") AS " + a;
+																				  if (a == "[month]") return "'NA' AS month";
+																				  if (a == "[day]") return "'NA' AS day";
+																				  return a;
+																			  }
+																			  else return a
+																			  }).join(', ') + " \n\nFROM ";
 	
 	// add FROM tables
-	if ($('#queryDate').val()) {
+	if (szDateRangeOption == "queryCMPDates") {
+		arrQtrs = [5];
+	} else if (szDateRangeOption == "querySingleDate" && $('#queryDate').val()) {
 		oDate = new Date($('#queryDate').val());
+		// construct date portion of WHERE clause, if specified
+		szWhereClause += (oDate ? ("[month] = " + (oDate.getMonth() + 1) + " AND [day] = " + oDate.getDate()): "");
 		iQuarter = Math.floor(oDate.getMonth() / 3) + 1;
-		szQuery += CTPS.scanApp.query.arrTables[iQuarter] + " AS data JOIN ";
+		arrQtrs = [iQuarter];
 	}
-	szQuery += CTPS.scanApp.query.arrTables[0] + " AS geo " + (iQuarter ? " ON data.tmc = geo.TMC ": "");
+
+	// construct FROM tables clause
+	for (iQuarter = 0; iQuarter < arrQtrs.length; iQuarter++) {
+		arrFromTables.push(CTPS.scanApp.query.arrTables[arrQtrs[iQuarter]] + " AS data JOIN " + CTPS.scanApp.query.arrTables[0] + " AS geo ON data.tmc = geo.TMC");
+	}
+	szQuery += arrFromTables.join(', ');
 	
-	// construct WHERE clause, if specified
-	szWhereClause += (oDate ? ("[month] = " + (oDate.getMonth() + 1) + " AND [day] = " + oDate.getDate()): "");
 	// hour range specification depends on radio option selected
 	if (szHourRangeOption == "queryHour") {
-		szWhereClause += ($('#queryHourSpec').val() ? (szWhereClause ? " AND " : "") + "[hour] = " + $('#queryHourSpec').val(): "");
+		szWhereClause += ($('#queryHourSpec').val() ? (szWhereClause ? " AND " : "") + "data.hour = " + $('#queryHourSpec').val(): "");
 	} else if (szHourRangeOption == "queryPeakAM") {
-		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 6 AND 8";
-	} else {
-		szWhereClause += (szWhereClause ? " AND " : "") + "[hour] BETWEEN 16 AND 18";
+		szWhereClause += (szWhereClause ? " AND " : "") + "data.hour BETWEEN 6 AND 8";
+	} else if (szHourRangeOption == "queryPeakPM") {
+		szWhereClause += (szWhereClause ? " AND " : "") + "data.hour BETWEEN 16 AND 18";
 	}
 	szWhereClause += ($('#queryRoute').val() ? (szWhereClause ? " AND " : "") + "Route_Number = '" + $('#queryRoute').val() + "'": "");
 	szWhereClause += ($('#queryRouteDir').val() ? (szWhereClause ? " AND " : "") + "Direction = '" + $('#queryRouteDir').val() + "'": "");
 	szWhereClause += ($('#queryIsConfidenceFilter').prop("checked") ? (szWhereClause ? " AND " : "") + CTPS.scanApp.query.szWhereQualityClause: "");
 	szQuery += (szWhereClause ? "\n\nWHERE " + szWhereClause : "");
+	
+	// add GROUP BY clause if multiple dates are being requested
+	if (szDateRangeOption == "queryCMPDates") {
+		szQuery += " \n\nGROUP BY " + CTPS.scanApp.query.szFieldList.split(', ').filter(function(a) {
+																								 return (a != "speed" && a != "confidence_score" && a != "c_value");
+																								 }).map(function(a, index) {
+																									 return a.split(' ')[a.split(' ').length - 1];
+																								 }).join(', ');
+	}
 	
 	// add fixed SORT BY clause
 	szQuery += " \n\nORDER BY [from], [month], [day], [hour], [minute]"
@@ -155,8 +188,12 @@ CTPS.scanApp.isQueryLimited = function() {
 	return $('#theQuery').val().toUpperCase().indexOf("WHERE ") != -1
 }
 
+CTPS.scanApp.getAddlQueryResults = function() {
+}
+
 CTPS.scanApp.initiateQuery = function() {
 	if (CTPS.scanApp.isQueryLimited()) {
+		CTPS.scanApp.arrResults = [];
 		$('#resultHeadingDiv').html('');
 		$('#querySubmit').prop('disabled', true);
 		var request = gapi.client.bigquery.jobs.query({
@@ -164,14 +201,13 @@ CTPS.scanApp.initiateQuery = function() {
 			"kind": "bigquery#queryRequest",
 			"query": $('#theQuery').val(),
 			//"maxResults": 10000,
-			"timeoutMs": 10000,
+			"timeoutMs": 60000,
 			"dryRun": false,
 			"useQueryCache": true
 		});
 		request.then(
 			CTPS.scanApp.handleQueryResults, // function that executes if the request succeeds in some way
 			function(resp) {				 // function that executes if the request fails altogether
-				console.log(resp);
 				$('#resultTabsDiv').hide();
 				$('#resultHeadingDiv').html('<h1>The query attempt failed.</h1><h2>Returned error message</h2>' + resp.result.error.message);
 				$('#querySubmit').prop('disabled', false);
@@ -207,13 +243,35 @@ CTPS.scanApp.clearOnScreenTimer = function() {
 }
 
 CTPS.scanApp.handleQueryResults = function(resp) {
-	CTPS.scanApp.clearOnScreenTimer();
-	$('#querySubmit').prop('disabled', false);
+	CTPS.scanApp.arrResults = CTPS.scanApp.arrResults.concat(resp.result.rows);
+//	CTPS.scanApp.clearOnScreenTimer();
+//	$('#querySubmit').prop('disabled', false);
 	
 	if (!resp.result.jobComplete) {
 		$('#resultTabsDiv').hide();
 		$('#resultHeadingDiv').html("<h1>The query is executing with job ID " + resp.result.jobReference.jobId + ", but is not yet complete.</h1>");
+	} else if (CTPS.scanApp.arrResults.length < resp.result.totalRows) {
+		// we don't have all the rows yet from the query, then get the next page of results
+		var request = gapi.client.bigquery.jobs.getQueryResults({
+			"projectId": CTPS.scanApp.project_id,
+			"jobId": resp.result.jobReference.jobId,
+			"pageToken": resp.result.pageToken,
+			//"maxResults": 10000,
+			"timeoutMs": 60000
+		});
+		request.then(
+			CTPS.scanApp.handleQueryResults, // function that executes if the request succeeds in some way
+			function(resp) {				 // function that executes if the request fails altogether
+				$('#resultTabsDiv').hide();
+				$('#resultHeadingDiv').html('<h1>The query attempt failed.</h1><h2>Returned error message</h2>' + resp.result.errors[0].message);
+				$('#querySubmit').prop('disabled', false);
+				CTPS.scanApp.clearOnScreenTimer();
+			});
+		
 	} else {
+		CTPS.scanApp.clearOnScreenTimer();
+		$('#querySubmit').prop('disabled', false);
+		resp.result.rows = CTPS.scanApp.arrResults;
 		CTPS.scanApp.displayQueryResults(resp);
 		$('#resultTabsDiv').show();
 	}
@@ -221,7 +279,7 @@ CTPS.scanApp.handleQueryResults = function(resp) {
 
 CTPS.scanApp.displayQueryResults = function(resp) {
 	// here's the most likely place to hook in Mark's D3 code.
-	// For example, comment out the call the displays the plain-Jane table and insert a call to Mark's code
+	// For example, comment out the call that displays the plain-Jane table and insert a call to Mark's code
 	function makeGettersFromSchema(schema) {
 		var getters = {};
 		var i;;
@@ -249,7 +307,12 @@ function createViz(data, getters) {
 		/* Create new field in JSON data array (cell [16]) to contain JavaScript date/time formatted data */
 
 		for (var i=0;i < data.length; i++){
-				var newString = new Date( "2012", getters.month(data[i]), getters.day(data[i]), getters.hour(data[i]), getters.minute(data[i]) );
+			// if query was an aggregation query across multiple dates, we'll have to arbitrarily supply a month and day as well as the year to construct a valid date datatype
+				var newString = new Date( "2012", 
+										 getters.month(data[i]) == "NA" ? "1" : getters.month(data[i]), 
+										 getters.day(data[i]) == "NA" ? "1" : getters.day(data[i]), 
+										 getters.hour(data[i]), 
+										 getters.minute(data[i]) );
 				data[i].f[16] = {"v":newString};
 			};
 		
